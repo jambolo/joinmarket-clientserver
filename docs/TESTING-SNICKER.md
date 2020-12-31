@@ -2,7 +2,7 @@
 
 Current pull request/branch [here](https://github.com/JoinMarket-Org/joinmarket-clientserver/pull/768).
 
-Instructions here are very subject to change. This was written from commit https://github.com/JoinMarket-Org/joinmarket-clientserver/pull/768/commits/bca004ccbec01bd7b6a2b39b18fefd767c071237
+Instructions here are very subject to change. This is correct as of commit https://github.com/JoinMarket-Org/joinmarket-clientserver/pull/768/commits/f103cd77236c07a253d9e68aca7cccae498d6e35.
 
 The main user-facing body of what is created here is to be found in the directory `scripts/snicker`, consisting of scripts:
 * `snicker-seed-tx.py` - create a fake SNICKER transaction in your own wallet
@@ -44,7 +44,7 @@ Mainnet isn't recommended now, for obvious reasons (including that it's a bit to
 
 #### Use of wallets
 
-** Wallet type** - please stick with native segwit (`native=true` in config *before* you generate), but you can also choose p2sh-p2wpkh, it should work. No other script type (including p2pkh) will work here. We don't want mixed script type SNICKER coinjoins.
+**Wallet type** - please stick with native segwit (`native=true` in config *before* you generate), but you can also choose p2sh-p2wpkh, it should work. No other script type (including p2pkh) will work here. We don't want mixed script type SNICKER coinjoins.
 
 **Persistence in the wallet** - this is very important and not at all obvious! But, on regtest by default (and I think testnet? check), we use hex seeds instead of wallet files and `VolatileStorage` (wallet storage in memory; wiped on shutdown). This is fine and convenient for many tests, but will not work for a key part of SNICKER - imported keys.
 The upshot - **make sure you actually generate wallet files for all wallets you're going to test SNICKER with**, otherwise you will not even see the created coins on the receiver side.
@@ -68,17 +68,17 @@ Your hidden service is available:
 xpkqk2cy2h2ay5iecwcod5ka36nxj2tsiyczk2w5c6o7h5g57w3xg4id.onion
 ```
 
-This is ephemeral, obviously we intend the real servers to be long-running. For now, add that onion **including an http prefix** here:
+This is ephemeral, obviously we intend the real servers to be long-running. For now, add that onion link here:
 
 ```
 
 [SNICKER]
 enabled = true
-servers= http://xpkqk2cy2h2ay5iecwcod5ka36nxj2tsiyczk2w5c6o7h5g57w3xg4id.onion,
+servers= xpkqk2cy2h2ay5iecwcod5ka36nxj2tsiyczk2w5c6o7h5g57w3xg4id.onion,
 ```
 ... to a `joinmarket.cfg` that you add inside `scripts/snicker`, by copying it from `scripts/` or wherever you keep your testing `joinmarket.cfg` file. (This manual annoyance is part of testing, it won't be needed in mainnet usage of course)
 
-`servers=` there is a comma separated list, and for now (until bugfixed) you need to include `http://`.
+`servers=` there is a comma separated list.
 
 You're now ready to do the two steps: (a) create a proposal and upload it, (b) download proposals (as the receiver identity/wallet) and complete coinjoins. It could be different people doing (a) and (b) of course but here we're assuming one tester doing everything (see two wallets above).
 
@@ -119,7 +119,7 @@ Obviously see the `--help` for details, but in this example we chose input index
 *Current bug* : when you run the above, assuming it connects the server OK, you will see:
 
 ```
-Response from server: http://xpkqk2cy2h2ay5iecwcod5ka36nxj2tsiyczk2w5c6o7h5g57w3xg4id.onion was: proposals-accepted
+Response from server: http://xpkqk2cy2h2ay5iecwcod5ka36nxj2tsiyczk2w5c6o7h5g57w3xg4id.onion was: 1 proposals-accepted
 ```
 ... but it will hang and not quit. Just Ctrl-C to quit until that bug is fixed (the "proposals-accepted" tells you that the proposal was recorded).
 
