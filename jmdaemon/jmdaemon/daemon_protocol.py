@@ -10,7 +10,7 @@ from .protocol import (COMMAND_PREFIX, ORDER_KEYS, NICK_HASH_LENGTH,
 from .irc import IRCMessageChannel
 
 from jmbase import (hextobin, is_hs_uri, get_tor_agent,
-                    get_nontor_agent, BytesProducer)
+                    get_nontor_agent, BytesProducer, wrapped_urlparse)
 from jmbase.commands import *
 from twisted.protocols import amp
 from twisted.internet import reactor, ssl
@@ -125,7 +125,7 @@ class HTTPPassThrough(amp.AMP):
             agent = get_nontor_agent(self.tls_whitelist)
 
         destination_url = server.encode("utf-8")
-        url_parts = list(urlparse.urlparse(destination_url))
+        url_parts = list(wrapped_urlparse(destination_url))
         if params:
             url_parts[4] = urlencode(params).encode("utf-8")
         destination_url = urlparse.urlunparse(url_parts)

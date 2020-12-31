@@ -4,6 +4,7 @@ import binascii
 from getpass import getpass
 from os import path, environ
 from functools import wraps
+import urllib.parse as urlparse
 # JoinMarket version
 JM_CORE_VERSION = '0.8.1dev'
 
@@ -280,3 +281,17 @@ def hexbin(func):
         return func(inst, *newargs, **kwargs)
 
     return func_wrapper
+
+def wrapped_urlparse(url):
+    """ This wrapper is unfortunately necessary as there appears
+    to be a bug in the urlparse handling of *.onion strings:
+    If http:// is prepended, the url parses correctly, but if it
+    is not, the .hostname property is erroneously None.
+    """
+    if isinstance(url, str):
+        a, b = (".onion", "http://")
+    else:
+        a, b = (b".onion", b"http://")
+    if url.endswith(a) and not url.startswith(b):
+        url = b + url
+    return urlparse.urlparse(url)

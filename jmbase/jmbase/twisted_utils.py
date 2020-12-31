@@ -7,7 +7,7 @@ from twisted.web.client import Agent, BrowserLikePolicyForHTTPS
 from txtorcon.web import tor_agent
 from twisted.web.iweb import IPolicyForHTTPS
 from twisted.internet.ssl import CertificateOptions
-import urllib.parse as urlparse
+from .support import wrapped_urlparse
 
 # txtorcon outputs erroneous warnings about hiddenservice directory strings,
 # annoyingly, so we suppress it here:
@@ -52,8 +52,10 @@ def stop_reactor():
     except ReactorNotRunning:
         pass
 
+
+
 def is_hs_uri(s):
-    x = urlparse.urlparse(s)
+    x = wrapped_urlparse(s)
     if x.hostname.endswith(".onion"):
         return (x.scheme, x.hostname, x.port)
     return False
