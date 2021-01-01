@@ -66,7 +66,7 @@ Usage: %prog [options] [wallet file]
     daemon = True if nodaemon == 1 else False
     snicker_r = SNICKERReceiver(wallet_service)
     servers = jm_single().config.get("SNICKER", "servers").split(",")
-    snicker_pf = SNICKERClientProtocolFactory(snicker_r, servers)
+    snicker_pf = SNICKERClientProtocolFactory(snicker_r, servers, oneshot=True)
     start_reactor(jm_single().config.get("DAEMON", "daemon_host"),
                   jm_single().config.getint("DAEMON", "daemon_port"),
                   None, snickerfactory=snicker_pf,

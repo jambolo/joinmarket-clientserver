@@ -17,7 +17,7 @@ from jmbase import (get_log, EXIT_FAILURE, hextobin, bintohex,
                     utxo_to_utxostr)
 from jmclient import (jm_single, get_irc_mchannels,
                       RegtestBitcoinCoreInterface,
-                      SNICKERReceiver)
+                      SNICKERReceiver, process_shutdown)
 import jmbitcoin as btc
 
 
@@ -46,7 +46,7 @@ class JMProtocolError(Exception):
 
 class SNICKERClientProtocol(BaseClientProtocol):
 
-    def __init__(self, client, servers, tls_whitelist=[]):
+    def __init__(self, client, servers, tls_whitelist=[], oneshot=False):
         # if client is type JMSNICKERReceiver, this will flag
         # the use of the receiver workflow (polling loop).
         # Otherwise it is assumed to be a proposer workloop,
@@ -60,6 +60,7 @@ class SNICKERClientProtocol(BaseClientProtocol):
                 tls_whitelist = ["127.0.0.1"]
         self.tls_whitelist = tls_whitelist
         self.processed_proposals = []
+        self.oneshot = oneshot
 
     def connectionMade(self):
         netconfig = {"socks5_host": jm_single().config.get("PAYJOIN", "onion_socks5_host"),
@@ -84,7 +85,7 @@ class SNICKERClientProtocol(BaseClientProtocol):
             self.proposals_poll_loop.stop()
 
     def poll_for_proposals(self):
-        """ Intended to be invoked in a LoopingCall or other
+        """ May be invoked in a LoopingCall or other
         event loop.
         Retrieves any entries in the proposals_source, then
         compares with existing,
@@ -130,12 +131,16 @@ class SNICKERClientProtocol(BaseClientProtocol):
 
     @commands.SNICKERReceiverUp.responder
     def on_SNICKER_RECEIVER_UP(self):
-        jlog.info("Starting SNICKER polling loop")
-        self.proposal_poll_loop = task.LoopingCall(
-            self.poll_for_proposals)
-        poll_interval = int(60.0 * float(
-            jm_single().config.get("SNICKER", "polling_interval_minutes")))
-        self.proposal_poll_loop.start(poll_interval, now=False)
+        if self.oneshot:
+            jlog.info("Starting single query to SNICKER server(s).")
+            reactor.callLater(0.0, self.poll_for_proposals)
+        else:
+            jlog.info("Starting SNICKER polling loop")
+            self.proposal_poll_loop = task.LoopingCall(
+                self.poll_for_proposals)
+            poll_interval = int(60.0 * float(
+                jm_single().config.get("SNICKER", "polling_interval_minutes")))
+            self.proposal_poll_loop.start(poll_interval, now=False)
         return {"accepted": True}
 
     @commands.SNICKERReceiverProposals.responder
@@ -149,13 +154,19 @@ class SNICKERClientProtocol(BaseClientProtocol):
         except:
             jlog.warn("Error in parsing proposals from server: " + str(server))
             return {"accepted": True}
-        reactor.callLater(0.0, self.client.process_proposals, proposals)
+        reactor.callLater(0.0, self.process_proposals, proposals)
         return {"accepted": True}
+
+    def process_proposals(self, proposals):
+        self.client.process_proposals(proposals)
+        if self.oneshot:
+            process_shutdown()
 
     @commands.SNICKERProposalsServerResponse.responder
     def on_SNICKER_PROPOSALS_SERVER_RESPONSE(self, response, server):
         self.client.info_callback("Response from server: " + str(server) +\
                                   " was: " + str(response))
+        self.client.end_requests_callback(None)
         return {"accepted": True}
 
 class JMClientProtocol(BaseClientProtocol):
@@ -614,10 +625,11 @@ class JMTakerClientProtocol(JMClientProtocol):
 class SNICKERClientProtocolFactory(protocol.ClientFactory):
     protocol = SNICKERClientProtocol
     def buildProtocol(self, addr):
-        return self.protocol(self.client, self.servers)
-    def __init__(self, client, servers):
+        return self.protocol(self.client, self.servers, oneshot=self.oneshot)
+    def __init__(self, client, servers, oneshot=False):
         self.client = client
         self.servers = servers
+        self.oneshot = oneshot
 
 class JMClientProtocolFactory(protocol.ClientFactory):
     protocol = JMTakerClientProtocol

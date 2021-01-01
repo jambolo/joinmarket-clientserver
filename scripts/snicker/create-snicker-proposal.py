@@ -88,7 +88,8 @@ def main():
                       default=5)
     (options, args) = parser.parse_args()
     snicker_plugin = JMPluginService("SNICKER")
-    load_program_config(config_path=options.datadir)
+    load_program_config(config_path=options.datadir,
+                        plugin_services=[snicker_plugin])
     if len(args) != 5:
         jmprint("Invalid arguments, see --help")
         sys.exit(EXIT_ARGERROR)
