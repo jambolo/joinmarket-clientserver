@@ -30,7 +30,7 @@ from jmclient import (RegtestBitcoinCoreInterface, process_shutdown,
      jm_single, load_program_config, check_regtest, select_one_utxo,
      estimate_tx_fee, SNICKERReceiver, add_base_options, get_wallet_path,
      open_test_wallet_maybe, WalletService, SNICKERClientProtocolFactory,
-     start_reactor)
+     start_reactor, JMPluginService)
 from jmclient.configure import get_log
 
 log = get_log()
@@ -87,6 +87,7 @@ def main():
                       help='number of mixdepths in wallet, default 5',
                       default=5)
     (options, args) = parser.parse_args()
+    snicker_plugin = JMPluginService("SNICKER")
     load_program_config(config_path=options.datadir)
     if len(args) != 5:
         jmprint("Invalid arguments, see --help")
@@ -108,6 +109,7 @@ def main():
     wallet_service = WalletService(wallet)
     if wallet_service.rpc_error:
         sys.exit(EXIT_FAILURE)
+    snicker_plugin.start_plugin_logging(wallet_service)
     # in this script, we need the wallet synced before
     # logic processing for some paths, so do it now:
     while not wallet_service.synced:

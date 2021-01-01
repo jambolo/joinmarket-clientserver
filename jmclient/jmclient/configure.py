@@ -436,6 +436,36 @@ def get_config_irc_channel(channel_name):
         channel += '-test'
     return channel
 
+class JMPluginService(object):
+    """ Allows us to configure on-startup
+    any additional service (such as SNICKER).
+    For now only covers logging.
+    """
+    def __init__(self, name, requires_logging=True):
+        self.name = name
+        self.requires_logging = requires_logging
+
+    def start_plugin_logging(self, wallet):
+        """ This requires the name of the active wallet
+        to set the logfile; TODO other plugin services may
+        need a different setup.
+        """
+        self.wallet = wallet
+        self.logfilename = "{}-{}.log".format(self.name,
+                            self.wallet.get_wallet_name())
+        self.start_logging()
+
+    def set_log_dir(self, logdirname):
+        self.logdirname = logdirname
+
+    def start_logging(self):
+        logFormatter = logging.Formatter(
+            ('%(asctime)s [%(levelname)-5.5s] {} - %(message)s'.format(
+                self.name)))
+        fileHandler = logging.FileHandler(
+        self.logdirname + '/{}'.format(self.logfilename))
+        fileHandler.setFormatter(logFormatter)
+        get_log().addHandler(fileHandler)
 
 def get_network():
     """Returns network name"""
@@ -480,7 +510,7 @@ def remove_unwanted_default_settings(config):
         if section.startswith('MESSAGING:'):
             config.remove_section(section)
 
-def load_program_config(config_path="", bs=None):
+def load_program_config(config_path="", bs=None, plugin_services=[]):
     global_singleton.config.readfp(io.StringIO(defaultconfig))
     if not config_path:
         config_path = lookup_appdata_folder(global_singleton.APPNAME)
@@ -576,6 +606,27 @@ def load_program_config(config_path="", bs=None):
     set_commitment_file(os.path.join(config_path,
                                          global_singleton.commit_file_location))
 
+    for p in plugin_services:
+        # for now, at this config level, the only significance
+        # of a "plugin" is that it keeps its own separate log.
+        # We require that a section exists in the config file,
+        # and that it has enabled=true:
+        assert isinstance(p, JMPluginService)
+        if not (global_singleton.config.has_section(p.name) and \
+                global_singleton.config.has_option(p.name, "enabled") and \
+                global_singleton.config.get(p.name, "enabled") == "true"):
+            break
+        if p.requires_logging:
+            # make sure the environment can accept a logfile by
+            # creating the directory in the correct place,
+            # and setting that in the plugin object; the plugin
+            # itself will switch on its own logging when ready,
+            # attaching a filehandler to the global log.
+            plogsdir = os.path.join(os.path.dirname(
+            global_singleton.config_location), "logs", p.name)
+            if not os.path.exists(plogsdir):
+                os.makedirs(plogsdir)
+            p.set_log_dir(plogsdir)
 
 def load_test_config(**kwargs):
     if "config_path" not in kwargs:

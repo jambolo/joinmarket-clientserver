@@ -6,7 +6,8 @@ from jmbase import get_log, jmprint
 from jmclient import (jm_single, load_program_config, WalletService,
                       open_test_wallet_maybe, get_wallet_path,
                       check_regtest, add_base_options, start_reactor,
-                      SNICKERClientProtocolFactory, SNICKERReceiver)
+                      SNICKERClientProtocolFactory, SNICKERReceiver,
+                      JMPluginService)
 from jmbase.support import EXIT_ARGERROR
 
 jlog = get_log()
@@ -43,7 +44,9 @@ Usage: %prog [options] [wallet file]
         parser.error('Needs a wallet file as argument')
         sys.exit(EXIT_ARGERROR)
     wallet_name = args[0]
-    load_program_config(config_path=options.datadir)
+    snicker_plugin = JMPluginService("SNICKER")
+    load_program_config(config_path=options.datadir,
+                        plugin_services=[snicker_plugin])
 
     check_regtest()
 
@@ -54,7 +57,7 @@ Usage: %prog [options] [wallet file]
         wallet_password_stdin=options.wallet_password_stdin,
         gap_limit=options.gaplimit)
     wallet_service = WalletService(wallet)
-
+    snicker_plugin.start_plugin_logging(wallet_service)
     while not wallet_service.synced:
         wallet_service.sync_wallet(fast=not options.recoversync)
     wallet_service.startService()
