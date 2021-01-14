@@ -65,6 +65,7 @@ Then build and install a local copy of libsecp256k1 for python-bitcointx:
     make
     make check
     make install
+    cd ../..
 
 > *NOTE*: JM_ROOT must be replaced with the venv directory you've just created, so it will be `~/joinmarket-clientserver/jmvenv` if you installed to your home directory.
 
@@ -78,6 +79,8 @@ Then build and install a local copy of libsecp256k1 for python-bitcointx:
 If you have installed this "full" version of the client, you can use it with the command line scripts as explained in the [usage guide](USAGE.md).
 
 ### Installation on macOS
+
+**WARNING: This manual process is more difficult**; the `install.sh` script is recommended, please go back to the [README](../README.md) unless you're sure you need to do this.
 
 1) Install Apple Command Line Tools
     ```
