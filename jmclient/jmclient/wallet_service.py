@@ -699,7 +699,7 @@ class WalletService(Service):
             used_addresses_gen = (tx['address']
                                   for tx in self.bci._yield_transactions(wallet_name)
                                   if tx['category'] == 'receive')
-
+        self.used_addresses = set(used_addresses_gen)
         used_indices = self.get_used_indices(used_addresses_gen)
         jlog.debug("got used indices: {}".format(used_indices))
         gap_limit_used = not self.check_gap_indices(used_indices)
